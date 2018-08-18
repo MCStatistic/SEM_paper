@@ -1,0 +1,12 @@
+---
+title: "Untitled"
+author: "Marlon Schumacher"
+date: "18 8 2018"
+output: pdf_document
+---
+
+#Input: ALLBUS 2016
+```{r}
+
+```
+
