@@ -5,6 +5,23 @@ date: "18 8 2018"
 output: pdf_document
 ---
 
+# packages
+```{r}
+install.packages("pacman")
+library("pacman")
+p_load(tidyverse, # noting to explain, makes it just tidy
+       haven, # read-function and more
+       magrittr, 
+       corrplot, 
+       mvnmle, 
+       mice, 
+       tidyr, 
+       dplyr, # data wrangling & pipe-operator
+       semPlot,
+       lavaan) # for plotting models
+```
+
+
 #Input: ALLBUS 2016
 ```{r}
 
