@@ -24,6 +24,72 @@ p_load(tidyverse, # noting to explain, makes it just tidy
 
 #Input: ALLBUS 2016
 ```{r}
+allbus <- read_spss("allbus2016.sav") %>% 
+  select(age, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
+         mc01, mc02, mc03, mc04, mc09, mc10, dn07, ma02, ma03, ma04, 
+         pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02, sex, 
+         isced11, isco08, siops08, di08, di08c, mn10, mn11, mn12, mn13, mn14, 
+         mn15, mn16, mn17, mn18, mn19, mn20, mn21, xr27, I044)
+
+allbus
 
 ```
+
+
+##Variables - Deutsch sein
+mn10 (können migraten echte deutsche werden), mn11, mn12, mn13, mn14, mn15, mn16, mn17, mn18, mn19, mn20, mn21
+
+##Variables - soziodemografische Werte
+age, sex, isced11, isco08, siops08, di08, di08c, xr27, ingle, I044 (Angst vor Verlust der Haupteinnahmequelle)
+
+##Variables - Einstellung zu Ausländern
+ma02, ma03, ma04, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
+
+##Variables - Kontakt/Kontakterfahrung
+mc01, mc02, mc03, mc04, mc09, mc10
+
+##Variables - Stolz
+pn01, pn02, pn03, pn04, pn05, pn06, pn07
+
+```{r}
+library(lavaan)
+library(semPlot)
+
+mod1 <- '#measurement model
+F1 =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+F2 =~ 1*isced11 + siops08 + di08c
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp11
+isced11 ~~ isced11
+siops08 ~~ siops08
+di08c ~~ di08c
+
+#Disturbances
+F1 ~~ F1
+F2 ~~ F2
+
+#Regression
+F1 ~ F2'
+
+fit1 <- cfa(model = mod1, 
+            data = allbus,
+            estimator = "MLM")
+
+semPaths(fit1,
+         nCharNodes = 0, # number of characters to abbreviate node labels
+         curvePivot = FALSE, # kind of curve #1
+         curve = 1, # kind of curve #2
+         what = "std", # what colores estimated parameter-lines
+         whatLabels = "std",# shows estimated parameters
+         sizeLat = 10, # width of the latent nodes
+         sizeLat2 = 10) # height of the latent nodes
+
+summary(fit1, standardized = T, fit.measures = T)
+```
+
 
