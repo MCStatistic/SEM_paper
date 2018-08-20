@@ -51,6 +51,13 @@ library("naniar")
 library(ggplot2)
 gg_miss_var(allbus, show_pct = T) + labs(y = "Missing Data") + ylim(0, 60)
 
+missing <- allbus %>%
+  miss_var_summary() %>% 
+  select(-n_miss_cumsum, -n_miss)
+
+ggplot(data = missing, aes(variable, pct_miss)) + 
+  geom_col(position = position_stack(reverse = TRUE))
+
 ```
 
 
