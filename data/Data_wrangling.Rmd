@@ -58,6 +58,19 @@ missing <- allbus %>%
 ggplot(data = missing, aes(variable, pct_miss)) + 
   geom_col(position = position_stack(reverse = TRUE))
 
+# Plot of Percentage of Missing Values for each Variable
+ggplot(data=missing, aes(x= reorder(variable,pct_miss), 
+                         y=pct_miss,
+                         label=pct_miss)) +
+  labs(x = "Variables", y = "Percentage of Missing Values") +
+  geom_bar(stat="identity", fill = "skyblue4") + 
+  geom_text(label=format(missing$pct_miss, digits=2),
+            size = 3,
+            color=rgb(100,100,100, maxColorValue=255),
+            hjust=-0.1) + 
+  coord_flip() +
+  theme_gray()
+
 ```
 
 
