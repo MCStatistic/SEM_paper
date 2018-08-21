@@ -7,7 +7,7 @@ output: pdf_document
 
 # packages
 ```{r}
-install.packages("pacman")
+# install.packages("pacman")
 library("pacman")
 p_load(tidyverse, # noting to explain, makes it just tidy
        haven, # read-function and more
@@ -21,55 +21,108 @@ p_load(tidyverse, # noting to explain, makes it just tidy
        lavaan) # for plotting models
 ```
 
-
 #Input: ALLBUS 2016
 ```{r}
+allbus_oD <- read_spss("allbus2016.sav") %>% 
+  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
+         mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
+         ma09, ingle, id02,
+         isced11, siops08, di08c, xr27, wghtpew)
+
 allbus <- read_spss("allbus2016.sav") %>% 
-  select(age, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
-         mc01, mc02, mc03, mc04, mc09, mc10, dn07, ma02, ma03, ma04, 
-         pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02, sex, 
-         isced11, isco08, siops08, di08, di08c, mn10, mn11, mn12, mn13, mn14, 
-         mn15, mn16, mn17, mn18, mn19, mn20, mn21, xr27)
+  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
+         mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
+         pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02,
+         isced11, siops08, di08c, xr27, wghtpew)
 
-allbus
+# View(allbus_oD)
 
-ncol(allbus)
-nrow(allbus)
+# install.packages("lavaan.survey")
+library("lavaan.survey")
+alb_sd <- survey::svydesign(id= ~1,
+                  weights= ~wghtpew,
+                  data= allbus_oD)
+
+# ncol(allbus)
+# nrow(allbus)
 
 ```
 
 
 #Missing Data
-```{r}
-colMeans(is.na(allbus))
-
-mis_p <- allbus %>%
-  summarize_all(funs(sum(is.na(.)) / length(.)))
+```{r, results='asis'}
+# colMeans(is.na(allbus))
+# 
+# mis_p <- allbus %>%
+#   summarize_all(funs(sum(is.na(.)) / length(.)))
 
 # install.packages("naniar")
 library("naniar")
 library(ggplot2)
-gg_miss_var(allbus, show_pct = T) + labs(y = "Missing Data") + ylim(0, 60)
+# gg_miss_var(allbus, show_pct = T) + labs(y = "Missing Data") + ylim(0, 60)
 
-missing <- allbus %>%
+# creating percantage of missing data
+missing_oD <- allbus_oD %>%
   miss_var_summary() %>% 
   select(-n_miss_cumsum, -n_miss)
 
-ggplot(data = missing, aes(variable, pct_miss)) + 
-  geom_col(position = position_stack(reverse = TRUE))
-
 # Plot of Percentage of Missing Values for each Variable
-ggplot(data=missing, aes(x= reorder(variable,pct_miss), 
+ggplot(data=missing_oD, aes(x= reorder(variable,pct_miss), 
                          y=pct_miss,
                          label=pct_miss)) +
-  labs(x = "Variables", y = "Percentage of Missing Values") +
+  labs(x = " ", y = " ") +
   geom_bar(stat="identity", fill = "skyblue4") + 
-  geom_text(label=format(missing$pct_miss, digits=2),
+  geom_text(label=format(missing_oD$pct_miss, digits=2),
             size = 3,
             color=rgb(100,100,100, maxColorValue=255),
             hjust=-0.1) + 
   coord_flip() +
-  theme_gray()
+  theme_gray() +
+  ggtitle(expression(paste(bold("Abbildung 1: "), "Prozente der fehlenden Werte")))
+
+# Missing Mechanism
+allbus_mis <- as.data.frame(md.pattern(allbus_oD, plot = F)) %>% 
+  select(-V33)
+
+allbus_mis2 <- allbus_mis[!(allbus_mis$siops08 > 1),]
+View(allbus_mis2)
+
+allbus_oD <- transform(allbus_oD, siops08_mis = ifelse(is.na(siops08), 0, 1))
+allbus_oD
+
+# install.packages("ISLR")
+library("ISLR")
+glm.fit1 <- glm(siops08_mis ~ work + age + di08c, 
+                data = allbus_oD, 
+                family = binomial(link = "logit"))
+
+summary(glm.fit1)
+
+# high significant correlation between work and missings of siops08
+# should filtering data set by work
+
+# creating new df by filtering with work == 4 (not working)
+allbus_c <- allbus_oD[!(allbus_oD$work == 4),]
+
+# creating percantage of missing data
+missing_c <- allbus_c %>%
+  miss_var_summary() %>% 
+  select(-n_miss_cumsum, -n_miss)
+
+# Plot of Percentage of Missing Values for each Variable
+ggplot(data=missing_c, aes(x= reorder(variable,pct_miss), 
+                         y=pct_miss,
+                         label=pct_miss)) +
+  labs(x = " ", y = " ") +
+  geom_bar(stat="identity", fill = "skyblue4") + 
+  geom_text(label=format(missing_c$pct_miss, digits=2),
+            size = 3,
+            color=rgb(100,100,100, maxColorValue=255),
+            hjust=-0.1) + 
+  coord_flip() +
+  theme_gray() +
+  ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filter")))
+
 
 ```
 
@@ -78,7 +131,7 @@ ggplot(data=missing, aes(x= reorder(variable,pct_miss),
 mn10 (können migraten echte deutsche werden), mn11, mn12, mn13, mn14, mn15, mn16, mn17, mn18, mn19, mn20, mn21
 
 ##Variables - soziodemografische Werte
-age, sex, isced11, isco08, siops08, di08, di08c, xr27, ingle, I044 (Angst vor Verlust der Haupteinnahmequelle)
+age, sex, isced11, isco08, siops08, di08, di08c, xr27, ingle
 
 ##Variables - Einstellung zu Ausländern
 ma02, ma03, ma04, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
@@ -89,42 +142,44 @@ mc01, mc02, mc03, mc04, mc09, mc10
 ##Variables - Stolz
 pn01, pn02, pn03, pn04, pn05, pn06, pn07
 
-```{r}
+
+#Model 1 - SES - Abl.
+```{r, results='asis'}
 library(lavaan)
 library(semPlot)
 
 mod1 <- '#measurement model
-F1 =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
-F2 =~ 1*isced11 + siops08 + di08c + xr27
-F3 =~ 1*mc04 + mc03 + mc02
+Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+SES =~ 1*isced11 + siops08 + di08c + xr27
 
 #Error
 mp02 ~~ mp02
 mp04 ~~ mp04
 mp06 ~~ mp06
 mp07 ~~ mp07
-mp09 ~~ mp11
-mc03 ~~ mc03
-mc04 ~~ mc04
+mp09 ~~ mp09
+mp11 ~~ mp11
 isced11 ~~ isced11
 siops08 ~~ siops08
 di08c ~~ di08c
 
-#Covariance
-F2 ~~ 0*F3
-
 #Disturbances
-F1 ~~ F1
-F2 ~~ F2
-F3 ~~ F3
+Abl. ~~ Abl.
+SES ~~ SES
 
 #Regression
-F1 ~ F2
-F1 ~ F3'
+Abl. ~ SES'
 
 fit1 <- cfa(model = mod1, 
-            data = allbus,
+            data = allbus_oD,
             estimator = "MLM")
+
+surveyfit <- lavaan.survey(lavaan.fit = fit1,
+                           survey.design = alb_sd)
+
+summary(surveyfit, standardized = T, fit.measures = T)
+
+summary(fit1, standardized = T, fit.measures = T)
 
 semPaths(fit1,
          nCharNodes = 0, # number of characters to abbreviate node labels
@@ -135,7 +190,74 @@ semPaths(fit1,
          sizeLat = 10, # width of the latent nodes
          sizeLat2 = 10) # height of the latent nodes
 
-summary(fit1, standardized = T, fit.measures = T)
+semPaths(fit1,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "spring")
+title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
+
+fitmeasures(fit1, "all")
+fit1_df <- summary(fit1, standardized = T, fit.measures = T)
+
+pars.factors <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='=~', c(1:5)]
+pars.regressions <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='~', c(1:5)]
+rbind(pars.factors, pars.regressions)
+
+
+library(xtable)
+xtable(rbind(pars.factors, pars.regressions))
+
+# xtable(modindices(fit1))
+```
+
+
+#Model 2: Abl. auf SES und Kontakt
+```{r}
+mod2 <- '#measurement model
+F1 =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+F2 =~ 1*isced11 + siops08 + di08c + xr27
+
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp09
+mp11 ~~ mp11
+mc04 ~~ mc04
+isced11 ~~ isced11
+di08c ~~ di08c
+
+#Covariance
+F2 ~~ mc04
+
+#Disturbances
+F1 ~~ F1
+F2 ~~ F2
+
+#Regression
+F1 ~ F2
+F1 ~ mc04'
+
+fit2 <- cfa(model = mod2, 
+            data = allbus_oD,
+            estimator = "MLM")
+
+semPaths(fit2,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "tree")
+title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
+
+summary(fit2, standardized = T, fit.measures = T)
+
 ```
 
 
