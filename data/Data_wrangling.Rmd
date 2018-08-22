@@ -24,13 +24,11 @@ p_load(tidyverse, # noting to explain, makes it just tidy
 #Input: ALLBUS 2016
 ```{r}
 allbus_oD <- read_spss("allbus2016.sav") %>% 
-  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
-         mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
-         ma09, ingle, id02,
-         isced11, siops08, di08c, xr27, wghtpew)
+  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp06, mp07, mp09, mp11, 
+         mc04, mc09, isced11, siops08, di08c, xr27, wghtpew)
 
 allbus <- read_spss("allbus2016.sav") %>% 
-  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
+  select(age, sex, work, ma09, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
          mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
          pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02,
          isced11, siops08, di08c, xr27, wghtpew)
@@ -81,11 +79,10 @@ ggplot(data=missing_oD, aes(x= reorder(variable,pct_miss),
   ggtitle(expression(paste(bold("Abbildung 1: "), "Prozente der fehlenden Werte")))
 
 # Missing Mechanism
-allbus_mis <- as.data.frame(md.pattern(allbus_oD, plot = F)) %>% 
-  select(-V33)
+allbus_mis <- as.data.frame(md.pattern(allbus_oD, plot = F))
 
 allbus_mis2 <- allbus_mis[!(allbus_mis$siops08 > 1),]
-View(allbus_mis2)
+# View(allbus_mis2)
 
 allbus_oD <- transform(allbus_oD, siops08_mis = ifelse(is.na(siops08), 0, 1))
 allbus_oD
@@ -103,11 +100,17 @@ summary(glm.fit1)
 
 # creating new df by filtering with work == 4 (not working)
 allbus_c <- allbus_oD[!(allbus_oD$work == 4),]
+# deleting the row with one new NA in it...look up where it come from...confusing.
+allbus_c <- allbus_c[!(is.na(allbus_c$sex)),]
+
+# nrow(allbus_c)
+# 
+# View(allbus_c)
 
 # creating percantage of missing data
 missing_c <- allbus_c %>%
   miss_var_summary() %>% 
-  select(-n_miss_cumsum, -n_miss)
+  select(-n_miss_cumsum)
 
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_c, aes(x= reorder(variable,pct_miss), 
@@ -123,23 +126,30 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
   theme_gray() +
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filter")))
 
-
 ```
 
 
-##Variables - Deutsch sein
-mn10 (können migraten echte deutsche werden), mn11, mn12, mn13, mn14, mn15, mn16, mn17, mn18, mn19, mn20, mn21
+##Variables - Deutsch sein - entfällt
 
 ##Variables - soziodemografische Werte
-age, sex, isced11, isco08, siops08, di08, di08c, xr27, ingle
+age
+sex
+isced11: Bildung
+siops08: Berufsprestige
+di08c:   Äquivalenzeinkommen, kat.
+xr27:    Schichteinstufung - Haushalt (VOR Beginn des Interview)
+id02:    Schichteinstufung - Haushalt 
 
 ##Variables - Einstellung zu Ausländern
-ma02, ma03, ma04, ma09, mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
+mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
 
 ##Variables - Kontakt/Kontakterfahrung
-mc01, mc02, mc03, mc04, mc09, mc10
+mc04 (Kontakt im Freundeskreis), 
+mc09 (Wie oft gute Erfahrungen mit Kontakt gemacht?)
+mc01, mc02, mc03 -> entfällt, da Faktorladungen zu schlecht
+mc10 -> entfällt, da bereits mc09 verwendet wird...
 
-##Variables - Stolz
+##Variables - Stolz -> entfällt, da zu viel
 pn01, pn02, pn03, pn04, pn05, pn06, pn07
 
 
@@ -200,7 +210,7 @@ semPaths(fit1,
 title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
 
 fitmeasures(fit1, "all")
-fit1_df <- summary(fit1, standardized = T, fit.measures = T)
+summary(fit1, standardized = T, fit.measures = T)
 
 pars.factors <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='=~', c(1:5)]
 pars.regressions <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='~', c(1:5)]
