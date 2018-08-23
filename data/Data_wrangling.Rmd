@@ -19,6 +19,8 @@ p_load(tidyverse, # noting to explain, makes it just tidy
        dplyr, # data wrangling & pipe-operator
        semPlot,
        lavaan) # for plotting models
+
+## Packages will be
 ```
 
 #Input: ALLBUS 2016
@@ -62,6 +64,7 @@ mc10 -> entfällt, da bereits mc09 verwendet wird...
 ##Stolz -> entfällt, da zu viel
 pn01, pn02, pn03, pn04, pn05, pn06, pn07
 
+
 #Missing Data - percentage & first look
 ```{r, results='asis'}
 # colMeans(is.na(allbus))
@@ -70,7 +73,7 @@ pn01, pn02, pn03, pn04, pn05, pn06, pn07
 #   summarize_all(funs(sum(is.na(.)) / length(.)))
 
 # install.packages("naniar")
-library("naniar")
+library("naniar") # Package for missing analysis
 library(ggplot2)
 # gg_miss_var(allbus, show_pct = T) + labs(y = "Missing Data") + ylim(0, 60)
 
@@ -103,10 +106,10 @@ allbus_oD <- transform(allbus_oD, siops08_mis = ifelse(is.na(siops08), 0, 1))
 allbus_oD
 
 # install.packages("ISLR")
-library("ISLR")
+library("ISLR") # package for logistic regression
 glm.fit1 <- glm(siops08_mis ~ work + age + di08c, 
                 data = allbus_oD, 
-                family = binomial(link = "logit"))
+                family = binomial)
 
 summary(glm.fit1)
 
@@ -145,6 +148,7 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
 
 ```
+
 
 #Missing Data - testing mechanism
 ```{r}
@@ -188,21 +192,25 @@ summary(glm_mis3)
 
 ```
 
+
 #Missing Data - multiple imputation
 ```{r}
 install.packages("mice")
 library(mice)
 
-allb_imp <- mice(allbus_c, 
+# Deleting variables for logistic regressions
+allbus_c2 <- allbus_c %>% 
+  select(-siops08_mis,
+         -di08c_mis,
+         -mc09_mis)
+
+allb_imp <- mice(allbus_c2, 
                    m=5,           # Number of multiple imputations
                    maxit=50,      # Number of iterations taken to impute missings
                    method="pmm",  # method = predictive mean matching
-                   seed=500)
-
-summary(allbus_imp)
+                   seed=500)      # 
 
 allbus_imp <- complete(allb_imp)
-
 allbus_imp
 
 miss_var_summary(allbus_imp)
