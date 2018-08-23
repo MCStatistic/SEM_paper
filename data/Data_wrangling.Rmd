@@ -24,7 +24,7 @@ p_load(tidyverse, # noting to explain, makes it just tidy
 #Input: ALLBUS 2016
 ```{r}
 allbus_oD <- read_spss("allbus2016.sav") %>% 
-  select(age, sex, work, ma09, mp01, mp02, mp03, mp04, mp06, mp07, mp09, mp11, 
+  select(age, sex, work, mp01, mp02, mp03, mp04, mp06, mp07, mp09, mp11, 
          mc04, mc09, isced11, siops08, di08c, xr27, wghtpew)
 
 allbus <- read_spss("allbus2016.sav") %>% 
@@ -47,7 +47,28 @@ alb_sd <- survey::svydesign(id= ~1,
 ```
 
 
-#Missing Data
+##soziodemografische Werte
+age
+sex
+isced11: Bildung
+siops08: Berufsprestige
+di08c:   Äquivalenzeinkommen, kat.
+xr27:    Schichteinstufung - Haushalt (VOR Beginn des Interview)
+id02:    Schichteinstufung - Haushalt 
+
+##Einstellung zu Ausländern
+mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
+
+##Kontakt/Kontakterfahrung
+mc04 (Kontakt im Freundeskreis), 
+mc09 (Wie oft gute Erfahrungen mit Kontakt gemacht?)
+mc01, mc02, mc03 -> entfällt, da Faktorladungen zu schlecht
+mc10 -> entfällt, da bereits mc09 verwendet wird...
+
+##Stolz -> entfällt, da zu viel
+pn01, pn02, pn03, pn04, pn05, pn06, pn07
+
+#Missing Data - percentage & first look
 ```{r, results='asis'}
 # colMeans(is.na(allbus))
 # 
@@ -112,6 +133,9 @@ missing_c <- allbus_c %>%
   miss_var_summary() %>% 
   select(-n_miss_cumsum)
 
+missing_c <- missing_c[!(missing_c$variable == "wghtpew"),]
+missing_c <- missing_c[!(missing_c$variable == "siops08_mis"),]
+
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_c, aes(x= reorder(variable,pct_miss), 
                          y=pct_miss,
@@ -124,33 +148,57 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
             hjust=-0.1) + 
   coord_flip() +
   theme_gray() +
-  ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filter")))
+  ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
 
 ```
 
+#Missing Data - testing mechanism
+```{r}
+# install.packages("BaylorEdPsych")
+library(BaylorEdPsych) # package for LittleMCAR
 
-##Variables - Deutsch sein - entfällt
+LittleMCAR(allbus_c)
+# chisq: 3959.322
+# pvalue: 0.000
+# H0-Hypothese wird folglich verworfen -> KEIN MCAR!
 
-##Variables - soziodemografische Werte
-age
-sex
-isced11: Bildung
-siops08: Berufsprestige
-di08c:   Äquivalenzeinkommen, kat.
-xr27:    Schichteinstufung - Haushalt (VOR Beginn des Interview)
-id02:    Schichteinstufung - Haushalt 
+# Logistic Regression for siops08-missings
+glm_mis1 <- glm(siops08_mis ~ sex + age + work + xr27 + isced11, 
+                data = allbus_c, 
+                family = binomial)
+summary(glm_mis1)
 
-##Variables - Einstellung zu Ausländern
-mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
+# Geschlecht & Work haben hier einen hoch sig. Einfluss.
+# Kann darau fhindeuten, dass vor allem Teilzeit kein Prestige bekommt bzw. es nicht ermittelt werden kann
 
-##Variables - Kontakt/Kontakterfahrung
-mc04 (Kontakt im Freundeskreis), 
-mc09 (Wie oft gute Erfahrungen mit Kontakt gemacht?)
-mc01, mc02, mc03 -> entfällt, da Faktorladungen zu schlecht
-mc10 -> entfällt, da bereits mc09 verwendet wird...
+# Logistic Regression for di08c-missings
+allbus_c <- transform(allbus_c, di08c_mis = ifelse(is.na(di08c), 0, 1))
+glm_mis2 <- glm(di08c_mis ~ sex + age + work + xr27 + isced11, 
+                data = allbus_c, 
+                family = binomial)
+summary(glm_mis2)
 
-##Variables - Stolz -> entfällt, da zu viel
-pn01, pn02, pn03, pn04, pn05, pn06, pn07
+# Schichteinstufung (negativ) & Alter (positiv) haben hier einen signifikanten Einfluss
+
+# Logistic Regression for mc09-missings
+allbus_c <- transform(allbus_c, mc09_mis = ifelse(is.na(mc09), 0, 1))
+glm_mis3 <- glm(mc09_mis ~ sex + age + work + xr27 + isced11 + mc04, 
+                data = allbus_c, 
+                family = binomial)
+summary(glm_mis3)
+
+# Kontakt Freundeskreis (negativ) hat hoch sig. negativen Zusammenhang! 
+# Grund: Man kann auf einen fehlenden Kontakt schließen, wodurch eine Beantwortung der Erfahrung ausbleibt
+
+# Entscheidung für Missing at Random (MAR)
+
+```
+
+#Missing Data - multiple imputation
+```{r}
+
+```
+
 
 
 #Model 1 - SES - Abl.
