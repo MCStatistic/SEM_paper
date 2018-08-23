@@ -35,12 +35,6 @@ allbus <- read_spss("allbus2016.sav") %>%
 
 # View(allbus_oD)
 
-# install.packages("lavaan.survey")
-library("lavaan.survey")
-alb_sd <- survey::svydesign(id= ~1,
-                  weights= ~wghtpew,
-                  data= allbus_oD)
-
 # ncol(allbus)
 # nrow(allbus)
 
@@ -244,8 +238,14 @@ SES ~~ SES
 Abl. ~ SES'
 
 fit1 <- cfa(model = mod1, 
-            data = allbus_oD,
+            data = allbus_imp,
             estimator = "MLM")
+
+# install.packages("lavaan.survey")
+library("lavaan.survey")
+alb_sd <- survey::svydesign(id= ~1,
+                  weights= ~wghtpew,
+                  data= allbus_imp)
 
 surveyfit <- lavaan.survey(lavaan.fit = fit1,
                            survey.design = alb_sd)
