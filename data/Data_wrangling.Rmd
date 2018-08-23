@@ -196,7 +196,22 @@ summary(glm_mis3)
 
 #Missing Data - multiple imputation
 ```{r}
+install.packages("mice")
+library(mice)
 
+allb_imp <- mice(allbus_c, 
+                   m=5,           # Number of multiple imputations
+                   maxit=50,      # Number of iterations taken to impute missings
+                   method="pmm",  # method = predictive mean matching
+                   seed=500)
+
+summary(allbus_imp)
+
+allbus_imp <- complete(allb_imp)
+
+allbus_imp
+
+miss_var_summary(allbus_imp)
 ```
 
 
