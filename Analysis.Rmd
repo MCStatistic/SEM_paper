@@ -1,0 +1,131 @@
+---
+title: "Analysis"
+author: "Marlon Schumacher"
+date: "26 8 2018"
+output: pdf_document
+---
+
+
+#Model 1 - SES - Abl.
+```{r, results='asis'}
+library(lavaan)
+library(semPlot)
+
+mod1 <- '#measurement model
+Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+SES =~ 1*isced11 + siops08 + di08c + xr27
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp09
+mp11 ~~ mp11
+isced11 ~~ isced11
+siops08 ~~ siops08
+di08c ~~ di08c
+
+#Disturbances
+Abl. ~~ Abl.
+SES ~~ SES
+
+#Regression
+Abl. ~ SES'
+
+fit1 <- cfa(model = mod1, 
+            data = allbus_imp,
+            estimator = "MLM")
+
+# install.packages("lavaan.survey")
+library("lavaan.survey")
+alb_sd <- survey::svydesign(id= ~1,
+                  weights= ~wghtpew,
+                  data= allbus_imp)
+
+surveyfit <- lavaan.survey(lavaan.fit = fit1,
+                           survey.design = alb_sd)
+
+summary(surveyfit, standardized = T, fit.measures = T)
+
+summary(fit1, standardized = T, fit.measures = T)
+
+semPaths(fit1,
+         nCharNodes = 0, # number of characters to abbreviate node labels
+         curvePivot = FALSE, # kind of curve #1
+         curve = 1, # kind of curve #2
+         what = "std", # what colores estimated parameter-lines
+         whatLabels = "std",# shows estimated parameters
+         sizeLat = 10, # width of the latent nodes
+         sizeLat2 = 10) # height of the latent nodes
+
+semPaths(fit1,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "spring")
+title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
+
+fitmeasures(fit1, "all")
+summary(fit1, standardized = T, fit.measures = T)
+
+pars.factors <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='=~', c(1:5)]
+pars.regressions <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='~', c(1:5)]
+rbind(pars.factors, pars.regressions)
+
+
+library(xtable)
+xtable(rbind(pars.factors, pars.regressions))
+
+# xtable(modindices(fit1))
+```
+
+
+#Model 2: Abl. auf SES und Kontakt
+```{r}
+mod2 <- '#measurement model
+F1 =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+F2 =~ 1*isced11 + siops08 + di08c + xr27
+
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp09
+mp11 ~~ mp11
+mc04 ~~ mc04
+isced11 ~~ isced11
+di08c ~~ di08c
+
+#Covariance
+F2 ~~ mc04
+
+#Disturbances
+F1 ~~ F1
+F2 ~~ F2
+
+#Regression
+F1 ~ F2
+F1 ~ mc04'
+
+fit2 <- cfa(model = mod2, 
+            data = allbus_oD,
+            estimator = "MLM")
+
+semPaths(fit2,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "tree")
+title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
+
+summary(fit2, standardized = T, fit.measures = T)
+
+```
+
