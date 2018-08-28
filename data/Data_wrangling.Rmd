@@ -27,7 +27,7 @@ p_load(tidyverse, # noting to explain, makes it just tidy
 ```{r}
 allbus_oD <- read_spss("allbus2016.sav") %>% 
   select(age, sex, work, mp01, mp02, mp03, mp04, mp06, mp07, mp09, mp11, 
-         mc04, mc09, isced11, siops08, di08c, xr27, wghtpew)
+         mc04, mc09, isced11, siops08, di08c, id02, wghtpew)
 
 allbus <- read_spss("allbus2016.sav") %>% 
   select(age, sex, work, ma09, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
@@ -146,7 +146,6 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
   coord_flip() +
   theme_gray() +
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
-
 ```
 
 
@@ -161,7 +160,7 @@ LittleMCAR(allbus_c)
 # H0-Hypothese wird folglich verworfen -> KEIN MCAR!
 
 # Logistic Regression for siops08-missings
-glm_mis1 <- glm(siops08_mis ~ sex + age + work + xr27 + isced11, 
+glm_mis1 <- glm(siops08_mis ~ sex + age + work + id02 + isced11, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis1)
@@ -171,7 +170,7 @@ summary(glm_mis1)
 
 # Logistic Regression for di08c-missings
 allbus_c <- transform(allbus_c, di08c_mis = ifelse(is.na(di08c), 0, 1))
-glm_mis2 <- glm(di08c_mis ~ sex + age + work + xr27 + isced11, 
+glm_mis2 <- glm(di08c_mis ~ sex + age + work + id02 + isced11, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis2)
@@ -180,7 +179,7 @@ summary(glm_mis2)
 
 # Logistic Regression for mc09-missings
 allbus_c <- transform(allbus_c, mc09_mis = ifelse(is.na(mc09), 0, 1))
-glm_mis3 <- glm(mc09_mis ~ sex + age + work + xr27 + isced11 + mc04, 
+glm_mis3 <- glm(mc09_mis ~ sex + age + work + id02 + isced11 + mc04, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis3)
@@ -219,7 +218,8 @@ miss_var_summary(allbus_imp)
 
 #Saving Data RData
 ```{r}
-
+save(allbus_imp, 
+     file = "/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
 ```
 
 
