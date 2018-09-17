@@ -26,8 +26,8 @@ p_load(tidyverse, # noting to explain, makes it just tidy
 #Input: ALLBUS 2016
 ```{r}
 allbus_oD <- read_spss("allbus2016.sav") %>% 
-  select(age, sex, work, mp01, mp02, mp03, mp04, mp06, mp07, mp09, mp11, 
-         mc04, mc09, isced11, siops08, di08c, id02, wghtpew)
+  select(age, sex, work, mp02, mp04, mp06, mp07, mp09, mp11, 
+         mc04, isced11, siops08, di08c, id02, wghtpew)
 
 allbus <- read_spss("allbus2016.sav") %>% 
   select(age, sex, work, ma09, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
@@ -53,7 +53,12 @@ xr27:    Schichteinstufung - Haushalt (VOR Beginn des Interview)
 id02:    Schichteinstufung - Haushalt 
 
 ##Einstellung zu Ausländern
-mp01, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12
+mp02 - Soziales Netz
+mp04 - Wohnungen
+mp06 - Arbeitsplätze
+mp07 - Straftaten
+mp09 - Zusammenhalt
+mp11 - Schulniveau
 
 ##Kontakt/Kontakterfahrung
 mc04 (Kontakt im Freundeskreis), 
@@ -88,6 +93,14 @@ missing_oD <- missing_oD[!(missing_oD$variable == "age"),]
 missing_oD <- missing_oD[!(missing_oD$variable == "wghtpew"),]
 missing_oD <- missing_oD[!(missing_oD$variable == "siops08_mis"),]
 
+missing_oD$variable
+
+rownames_mis_oD <- c("Berufsprestige","Äquivalenzeink.", "Kontakt", "A_Straftaten", "A_Schulniveau",
+                     "A_Wohnungen", "Schicht", "A_Zusammenhalt", "A_Soziales_Netz", "A_Arbeitsplätze",
+                     "Bildung")
+
+missing_oD$variable <- rownames_mis_oD
+
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_oD, aes(x= reorder(variable,pct_miss), 
                          y=pct_miss,
@@ -99,7 +112,7 @@ ggplot(data=missing_oD, aes(x= reorder(variable,pct_miss),
             color=rgb(100,100,100, maxColorValue=255),
             hjust=-0.1) + 
   coord_flip() +
-  theme_gray() +
+  theme(axis.text.y = element_text(angle = 40, vjust = 1, hjust=1)) +
   ggtitle(expression(paste(bold("Abbildung 1: "), "Prozente der fehlenden Werte")))
 
 # Missing Mechanism
@@ -148,6 +161,14 @@ missing_c <- missing_c[!(missing_c$variable == "age"),]
 missing_c <- missing_c[!(missing_c$variable == "sex"),]
 missing_c <- missing_c[!(missing_c$variable == "work"),]
 
+colnames(missing_c)  
+
+rownames_mis_p <- c("Äquivalenzeink.", "Kontakt", "A_Straftaten", "Berufsprestige", "A_Wohnungen",
+              "A_Schulniveau", "A_Zusammenhalt", "Schicht", "A_Soziales_Netz", "A_Arbeitsplätze",
+              "Bildung")
+
+missing_c$variable <- rownames_mis_p
+
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_c, aes(x= reorder(variable,pct_miss), 
                          y=pct_miss,
@@ -159,9 +180,12 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
             color=rgb(100,100,100, maxColorValue=255),
             hjust=-0.1) + 
   coord_flip() +
-  theme_gray() +
-  ylab("Anteil in Prozent")
+  theme(axis.text.y = element_text(angle = 40, vjust = 1, hjust=1)) +
+  ylab("Anteil in Prozent") +
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
+
+  
+missing_c_col <- setnames(data, old=c("old_name","another_old_name"), new=c("new_name", "another_new_name"))
 ```
 
 
@@ -210,8 +234,7 @@ library(mice)
 # Deleting variables for logistic regressions
 allbus_c2 <- allbus_c %>% 
   select(-siops08_mis,
-         -di08c_mis,
-         -mc09_mis)
+         -di08c_mis)
 
 allb_imp <- mice(allbus_c2, 
                    m=5,           # Number of multiple imputations
@@ -225,10 +248,76 @@ allbus_imp
 miss_var_summary(allbus_imp)
 ```
 
+#Descritptive Analysis
+```{r}
+m_test <- allbus_imp %>% 
+  select(-wghtpew, -sex, -age, -work)
+
+install.packages("pastecs")
+library(pastecs)
+
+stat.desc(m_test)
+
+summary(m_test)
+
+
+install.packages("MVN") # Package for Mardia Test
+library(mvn)
+
+mvn(m_test, 
+    mvnTest = "hz",
+    cov = T,
+    multivariatePlot = "qq")
+
+results <- mvn(m_test, 
+    mvnTest = "mardia",
+    covariance = T,
+    multivariatePlot = "qq")
+
+desc <- as.data.frame(results$Descriptives)
+desc_sw <- as.data.frame(results$univariateNormality)
+desc_sw <- desc_sw %>% 
+  select(-Test, -Normality)
+
+desc_complete <- cbind(desc, desc_sw)
+
+desc <- desc %>% 
+  select(-n, -"25th", -"75th")
+
+table(desc)
+stargazer(desc)
+
+# creating latex-code for descriptive Table
+desc_x <- desc %>% 
+  select(-variable)
+library(xtable)
+xtable(desc_x)
+
+desc_comp <- desc_complete %>% 
+  select(-variable, - Variable, -Statistic)
+
+# ordering colnames
+col_order <- c("Mean", "Median", "Std.Dev", "Min", "Max", "Skew", "Kurtosis", "p value")
+desc_complete_f <- desc_comp[, col_order]
+
+desc_co_f<- desc_complete_f %>% 
+  select(-Min, -Max)
+
+xtable(desc_complete_f)
+xtable(desc_co_f)
+
+stargazer(desc_comp)
+```
+
+
 #Saving Data RData
 ```{r}
 save(allbus_imp, 
      file = "/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
 ```
+
+
+
+
 
 
