@@ -82,6 +82,12 @@ missing_oD <- allbus_oD %>%
   miss_var_summary() %>% 
   select(-n_miss_cumsum, -n_miss)
 
+missing_oD <- missing_oD[!(missing_oD$variable == "sex"),]
+missing_oD <- missing_oD[!(missing_oD$variable == "work"),]
+missing_oD <- missing_oD[!(missing_oD$variable == "age"),]
+missing_oD <- missing_oD[!(missing_oD$variable == "wghtpew"),]
+missing_oD <- missing_oD[!(missing_oD$variable == "siops08_mis"),]
+
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_oD, aes(x= reorder(variable,pct_miss), 
                          y=pct_miss,
@@ -105,6 +111,7 @@ allbus_mis2 <- allbus_mis[!(allbus_mis$siops08 > 1),]
 allbus_oD <- transform(allbus_oD, siops08_mis = ifelse(is.na(siops08), 0, 1))
 allbus_oD
 
+options(scipen =999)
 # install.packages("ISLR")
 library("ISLR") # package for logistic regression
 glm.fit1 <- glm(siops08_mis ~ work + age + di08c, 
@@ -113,11 +120,16 @@ glm.fit1 <- glm(siops08_mis ~ work + age + di08c,
 
 summary(glm.fit1)
 
+install.packages("stargazer")
+library(stargazer)
+stargazer(glm.fit1)
+
 # high significant correlation between work and missings of siops08
 # should filtering data set by work
 
-# creating new df by filtering with work == 4 (not working)
+# creating new df by filtering with work == 4 (not working) & 3
 allbus_c <- allbus_oD[!(allbus_oD$work == 4),]
+allbus_c <- allbus_c[!(allbus_c$work == 3),]
 # deleting the row with one new NA in it...look up where it come from...confusing.
 allbus_c <- allbus_c[!(is.na(allbus_c$sex)),]
 
@@ -132,6 +144,9 @@ missing_c <- allbus_c %>%
 
 missing_c <- missing_c[!(missing_c$variable == "wghtpew"),]
 missing_c <- missing_c[!(missing_c$variable == "siops08_mis"),]
+missing_c <- missing_c[!(missing_c$variable == "age"),]
+missing_c <- missing_c[!(missing_c$variable == "sex"),]
+missing_c <- missing_c[!(missing_c$variable == "work"),]
 
 # Plot of Percentage of Missing Values for each Variable
 ggplot(data=missing_c, aes(x= reorder(variable,pct_miss), 
@@ -145,6 +160,7 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
             hjust=-0.1) + 
   coord_flip() +
   theme_gray() +
+  ylab("Anteil in Prozent")
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
 ```
 
@@ -155,25 +171,19 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
 library(BaylorEdPsych) # package for LittleMCAR
 
 LittleMCAR(allbus_c)
-# chisq: 3959.322
+# chisq: 3513.059
+# df: 1191
 # pvalue: 0.000
 # H0-Hypothese wird folglich verworfen -> KEIN MCAR!
 
-# Logistic Regression for siops08-missings
-glm_mis1 <- glm(siops08_mis ~ sex + age + work + id02 + isced11, 
-                data = allbus_c, 
-                family = binomial)
-summary(glm_mis1)
-
-# Geschlecht & Work haben hier einen hoch sig. Einfluss.
-# Kann darau fhindeuten, dass vor allem Teilzeit kein Prestige bekommt bzw. es nicht ermittelt werden kann
 
 # Logistic Regression for di08c-missings
 allbus_c <- transform(allbus_c, di08c_mis = ifelse(is.na(di08c), 0, 1))
-glm_mis2 <- glm(di08c_mis ~ sex + age + work + id02 + isced11, 
+glm_mis2 <- glm(di08c_mis ~ sex + age + isced11, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis2)
+stargazer(glm.fit1, glm_mis2, glm_mis3, title = "Tabelle x: logisitische Regression - Fehlende Werte")
 
 # Schichteinstufung (negativ) & Alter (positiv) haben hier einen signifikanten Einfluss
 
@@ -214,7 +224,6 @@ allbus_imp
 
 miss_var_summary(allbus_imp)
 ```
-
 
 #Saving Data RData
 ```{r}

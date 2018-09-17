@@ -8,13 +8,72 @@ output: pdf_document
 #Loading Data
 ```{r}
 load("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
+allbus_imp$siops08
+```
+
+#Messmodell
+```{r}
+library(lavaan)
+library(semPlot)
+
+mod_mes <- '#measurement model
+Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+SES =~ 1*isced11 + siops08 + di08c + id02
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp09
+mp11 ~~ mp11
+isced11 ~~ isced11
+id02 ~~ id02
+siops08 ~~ siops08
+di08c ~~ di08c
+
+#Disturbance
+Abl. ~~ Abl.
+SES ~~ SES'
+
+fit_mes <- cfa(model = mod_mes,
+               estimator = "MLM",
+               data = allbus_imp) # KEEP GOING!
+
+library("lavaan.survey")
+alb_sd <- survey::svydesign(id= ~1,
+                  weights= ~wghtpew,
+                  data= allbus_imp)
+
+surveyfit <- lavaan.survey(lavaan.fit = fit_mes,
+                           survey.design = alb_sd)
+
+semPaths(fit_mes,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "spring")
+title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
+
+semPaths(surveyfit,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "spring")
+title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
+
+summary(fit_mes, standardized = T, fit.measures = T)
+
+modificationindices(fit_mes, sort. = TRUE)
 ```
 
 
 #Model 1 - SES - Abl.
 ```{r, results='asis'}
-library(lavaan)
-library(semPlot)
 
 mod1 <- '#measurement model
 Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
@@ -125,5 +184,67 @@ title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt",
 
 summary(fit2, standardized = T, fit.measures = T)
 
+```
+
+#TEST
+```{r}
+test <- '#measurement model
+Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+SES =~ 1*isced11 + siops08 + di08c + id02
+K =~ 1*mc01 + mc02 + mc03 + mc04
+
+#Error
+mp02 ~~ mp02
+mp04 ~~ mp04
+mp06 ~~ mp06
+mp07 ~~ mp07
+mp09 ~~ mp09
+mp11 ~~ mp11
+mc04 ~~ mc04
+isced11 ~~ isced11
+di08c ~~ di08c
+id02 ~~ id02
+
+#Covariance
+SES ~~ mc04
+
+#Disturbances
+Abl. ~~ Abl.
+SES ~~ SES
+
+#Regression
+Abl. ~ SES
+Abl. ~ mc04'
+
+fit_t <- cfa(model = test, 
+            data = allbus,
+            estimator = "MLM")
+
+semPaths(fit_t,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "tree")
+title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
+
+summary(fit2, standardized = T, fit.measures = T)
+
+test_2 <- '#measurement model
+K =~ 1*mc01 + mc02 + mc03'
+
+fit_t2 <- cfa(model = test_2, 
+            data = allbus,
+            estimator = "MLM")
+
+semPaths(fit_t2,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         curve = 3,
+         layout = "tree")
+title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
 ```
 
