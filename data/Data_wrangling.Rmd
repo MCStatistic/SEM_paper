@@ -238,14 +238,39 @@ allbus_c2 <- allbus_c %>%
 
 allb_imp <- mice(allbus_c2, 
                    m=5,           # Number of multiple imputations
-                   maxit=50,      # Number of iterations taken to impute missings
+                   maxit=20,      # Number of iterations taken to impute missings
                    method="pmm",  # method = predictive mean matching
                    seed=500)      # 
+
+# Inspecting Imputation
+allb_vis <- allbus_c2
+colnames(allb_vis)<- c("Alter", "Geschlecht", "Arbeitssituation", "A_Soziales_Netz", 
+                        "A_Wohnungen", "A_Arbeitsplätze", "A_Straftaten", "A_Zusammenhalt",
+                        "A_Schulniveau", "Kontakt", "Bildung", "Berufsprestige", "Äquivalenzeink.",
+                        "Schicht", "Gewichtung")
+
+allb_imp_vis <- mice(allb_vis,
+                     m = 5,
+                     maxit = 20,
+                     method = "pmm",
+                     seed=500)
+
+densityplot(allb_imp_vis)
+stripplot(allb_imp_vis)
+densityplot(allb_imp)
+stripplot(allb_imp)
+
+imp <- allb_imp
+colnames(imp$imp)[which(names(imp$imp) == "mp02")] <- "Klappts"
+
+densityplot(allb_imp, ylab = "Density")
+stripplot(allb_imp)
+
+densityplot(imp)
 
 allbus_imp <- complete(allb_imp)
 allbus_imp
 
-miss_var_summary(allbus_imp)
 ```
 
 #Descritptive Analysis
@@ -269,10 +294,17 @@ mvn(m_test,
     cov = T,
     multivariatePlot = "qq")
 
+mvn(m_test, 
+    mvnTest = "royston",
+    covariance = T,
+    multivariatePlot = "qq")
+
 results <- mvn(m_test, 
     mvnTest = "mardia",
     covariance = T,
     multivariatePlot = "qq")
+
+mardia(m_test)
 
 desc <- as.data.frame(results$Descriptives)
 desc_sw <- as.data.frame(results$univariateNormality)
@@ -288,8 +320,7 @@ table(desc)
 stargazer(desc)
 
 # creating latex-code for descriptive Table
-desc_x <- desc %>% 
-  select(-variable)
+desc_x <- desc 
 library(xtable)
 xtable(desc_x)
 
@@ -304,9 +335,23 @@ desc_co_f<- desc_complete_f %>%
   select(-Min, -Max)
 
 xtable(desc_complete_f)
-xtable(desc_co_f)
+xtable(desc_complete)
 
 stargazer(desc_comp)
+```
+
+# Correlation & More
+```{r}
+allb_vis_cor <- allbus_imp %>% 
+  select(-age, -sex, -wghtpew, -work)
+
+# creating correlation matrix
+res <- cor(allb_vis_cor)
+res <- round(res, 2)
+
+as.data.frame(res)
+# latex code for table
+xtable(as.data.frame(res))
 ```
 
 
