@@ -16,8 +16,98 @@ allbus_imp$siops08
 library(lavaan)
 library(semPlot)
 
+# Neuer Datensatz
+allbus_imp_vis <- allbus_imp %>% 
+  select(-age, -sex, -work)
+
+# Veränderung der Labels zwecks besserer Darstellung in der Arbeit
+colnames(allbus_imp_vis) <- c("Soz.",  "Whg", "Arb.", "Straf",
+                          "Halt", "Schul.", "Kontakt", "Bild.", "Beruf",
+                          "Äq.E.","Schicht", "gewicht")
+
+# Spezifikation des Messmodells
+mod_mes_vis <- '#measurement model
+Abl. =~ 1*Arb. + Whg + Soz. + Straf + Halt + Schul.
+SES =~ 1*Bild. + Beruf + Äq.E. + Schicht
+
+#Error
+Soz. ~~ Soz.
+Whg ~~ Whg
+Arb. ~~ Arb.
+Straf ~~ Straf
+Halt ~~ Halt
+Schul. ~~ Schul.
+Bild. ~~ Bild.
+Schicht ~~ Schicht
+Beruf ~~ Beruf
+Äq.E. ~~ Äq.E.
+
+#Disturbance
+Abl. ~~ Abl.
+SES ~~ SES
+
+#Covariance
+Abl. ~~ SES'
+
+# Fitting des spezifizierten Messmodells
+fit_mes <- cfa(model = mod_mes_vis,
+               estimator = "MLM",
+               data = allbus_imp_vis) # KEEP GOING!
+
+library("lavaan.survey")
+alb_sd_vis <- survey::svydesign(id= ~1,
+                  weights= ~gewicht,
+                  data= allbus_imp_vis)
+
+surveyfit_mes <- lavaan.survey(lavaan.fit = fit_mes,
+                           survey.design = alb_sd_vis)
+
+# Visualisierung (Fit-Maße müssen noch eingefügt werden, vllt. einfach mit PowerPoint?)
+semPaths(fit_mes,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10,
+         sizeLat2 = 10,
+         sizeMan = 5,
+         curve = 3)
+
+# Plot of weightet fit
+semPaths(surveyfit_mes,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10, # size latent
+         sizeLat2 = 10, # height latent
+         sizeMan = 6, # size manifest
+         sizeInt = 3.5, 
+         edge.label.cex=0.85, # edding size of parameters
+         curve = 3)
+
+# Fitmaße und mehr
+summary(surveyfit_mes, standardized = T, fit.measures = T)
+fitmeasures(surveyfit_mes)
+fitmea
+
+# Residuen noch überprüfen (in Anhang reicht)
+
+
+# Modifikationsindizes für zwecks möglicher Optimierungen
+modi_1 <- modificationindices(surveyfit_mes, sort. = TRUE)
+
+# creating table (latex)
+modi_df1 <- as.data.frame(modi_1)
+modi_df1 <- modi_df1 %>% 
+  select(-epc, -sepc.lv, -sepc.nox)
+
+# latex code for the table -> in Latex anpassen
+xtable(modi_df1)
+
+
+```
+
+
+```{r}
 mod_mes <- '#measurement model
-Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
+Abl. =~ 1*mp06 + mp04 + mp02 + mp07 + mp09 + mp11
 SES =~ 1*isced11 + siops08 + di08c + id02
 
 #Error
@@ -34,7 +124,12 @@ di08c ~~ di08c
 
 #Disturbance
 Abl. ~~ Abl.
-SES ~~ SES'
+SES ~~ SES
+
+#Covariance
+Abl. ~~ SES'
+
+
 
 fit_mes <- cfa(model = mod_mes,
                estimator = "MLM",
@@ -53,9 +148,7 @@ semPaths(fit_mes,
          whatLabels = "std",
          sizeLat = 10,
          sizeLat2 = 10,
-         curve = 3,
-         layout = "spring")
-title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
+         curve = 3)
 
 semPaths(surveyfit,
          nCharNodes = 0,

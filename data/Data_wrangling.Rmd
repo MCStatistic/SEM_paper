@@ -7,7 +7,7 @@ output: pdf_document
 
 # packages
 ```{r}
-# install.packages("pacman")
+install.packages("pacman")
 library("pacman")
 p_load(tidyverse, # noting to explain, makes it just tidy
        haven, # read-function and more
@@ -145,10 +145,6 @@ allbus_c <- allbus_oD[!(allbus_oD$work == 4),]
 allbus_c <- allbus_c[!(allbus_c$work == 3),]
 # deleting the row with one new NA in it...look up where it come from...confusing.
 allbus_c <- allbus_c[!(is.na(allbus_c$sex)),]
-
-# nrow(allbus_c)
-# 
-# View(allbus_c)
 
 # creating percantage of missing data
 missing_c <- allbus_c %>%
@@ -306,6 +302,8 @@ results <- mvn(m_test,
 
 mardia(m_test)
 
+# Mardia Skewness ist extrem hoch, leider derzeit noch keine wirkliche Literatur diesbezüglich gefunden
+
 desc <- as.data.frame(results$Descriptives)
 desc_sw <- as.data.frame(results$univariateNormality)
 desc_sw <- desc_sw %>% 
@@ -352,6 +350,34 @@ res <- round(res, 2)
 as.data.frame(res)
 # latex code for table
 xtable(as.data.frame(res))
+
+allb_vis_p <- allb_vis_cor
+colnames(allb_vis_p) <- c("A_Soz.",  "A_Wohnungen", "A_Arbeitsplätze", "A_Straftaten",
+                          "A_Zusammenhalt", "A_Schulniveau", "Kontakt", "Bildung", "Berufsprestige",
+                          "Äquivalenzeink.","Schicht")
+res_p <- cor(allb_vis_p)
+res_p <- round(res_p, 2)
+
+# Plot
+library(corrplot)
+corrplot(res_p, method = "square", # Darstellungsmethode
+         type = "upper", # 
+         tl.col="black", # color of labels
+         tl.srt = 15, # winkel der labels
+         tl.cex = 0.6, # size of labels
+         addCoef.col="black", # color for coef
+         diag=FALSE, # diagonale wird so nicht dargestellt
+         insig = "blank")
+```
+
+# Faktorenanalyse
+```{r}
+allb_efa <- allbus_imp %>% 
+  select(-age, -sex, -wghtpew, -work, -mc04)
+
+install.packages("GPArotation")
+library(GPArotation)
+fa_1 <- fa(allb_efa, 2, fm="pa", rotate ="oblimin")
 ```
 
 
