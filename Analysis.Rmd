@@ -11,6 +11,47 @@ load("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_i
 allbus_imp$siops08
 ```
 
+#Bad Loadings
+```{r}
+allbus <- allbus %>%
+  select(mc01, mc02, mc03, mc04, wghtpew)
+
+mod_loadings <- '#measurement
+Kontakt =~ 1*mc04 + mc03 + mc02 + mc01
+
+#Error
+mc01 ~~ mc01
+mc02 ~~ mc02
+mc03 ~~ mc03
+mc04 ~~ mc04'
+
+fit_loads <- cfa(model = mod_loadings,
+                 data = allbus,
+                 estimator = "MLM")
+
+allbus_design <- svydesign(id = ~1,
+                           weights = ~wghtpew,
+                           data =allbus)
+
+fit_loads_weight <- lavaan.survey(lavaan.fit = fit_loads,
+                                  survey.design = allbus_design)
+
+semPaths(fit_loads_weight,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10, # size latent
+         sizeLat2 = 10, # height latent
+         sizeMan = 6, # size manifest
+         sizeInt = 3.5, 
+         edge.label.cex=0.85, # edding size of parameters
+         curve = 3)
+
+summary(fit_loads_weight, standardized = T, fit.measures = T)
+
+```
+
+
+
 #Messmodell
 ```{r}
 library(lavaan)
@@ -22,7 +63,7 @@ allbus_imp_vis <- allbus_imp %>%
 
 # Veränderung der Labels zwecks besserer Darstellung in der Arbeit
 colnames(allbus_imp_vis) <- c("Soz.",  "Whg", "Arb.", "Straf",
-                          "Halt", "Schul.", "Kontakt", "Bild.", "Beruf",
+                          "Halt", "Schul.", "Kont.", "Bild.", "Beruf",
                           "Äq.E.","Schicht", "gewicht")
 
 # Spezifikation des Messmodells
@@ -52,7 +93,7 @@ Abl. ~~ SES'
 # Fitting des spezifizierten Messmodells
 fit_mes <- cfa(model = mod_mes_vis,
                estimator = "MLM",
-               data = allbus_imp_vis) # KEEP GOING!
+               data = allbus_imp_vis) 
 
 library("lavaan.survey")
 alb_sd_vis <- survey::svydesign(id= ~1,
@@ -62,16 +103,7 @@ alb_sd_vis <- survey::svydesign(id= ~1,
 surveyfit_mes <- lavaan.survey(lavaan.fit = fit_mes,
                            survey.design = alb_sd_vis)
 
-# Visualisierung (Fit-Maße müssen noch eingefügt werden, vllt. einfach mit PowerPoint?)
-semPaths(fit_mes,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         sizeMan = 5,
-         curve = 3)
-
-# Plot of weightet fit
+# Plot of weightet fit (Fit-Maße noch mit PowerPoint hinzufügen)
 semPaths(surveyfit_mes,
          nCharNodes = 0,
          whatLabels = "std",
@@ -85,7 +117,6 @@ semPaths(surveyfit_mes,
 # Fitmaße und mehr
 summary(surveyfit_mes, standardized = T, fit.measures = T)
 fitmeasures(surveyfit_mes)
-fitmea
 
 # Residuen noch überprüfen (in Anhang reicht)
 
@@ -101,8 +132,236 @@ modi_df1 <- modi_df1 %>%
 # latex code for the table -> in Latex anpassen
 xtable(modi_df1)
 
+# Obtaining std. Residuqls
+get_std_cor <- function(fit) {
+  N_cov <- list(
+    observed = inspect(fit, 'sampstat')$cov ,
+     fitted = fitted(fit)$cov )
+N_cor <- list(
+    observed = cov2cor(N_cov$observed),
+    fitted = cov2cor(N_cov$fitted) )
+N_cor$residual <- N_cor$observed - N_cor$fitted
+lapply(N_cor, function(X) round(X, 2))
+}
+
+resid_mes <- get_std_cor(surveyfit_mes)
+resid_mes.df <- resid_mes$residual
+
+xtable(resid_mes.df)
+
 
 ```
+
+#freie Schätzung MI - Messmodell 2 (Anhang)
+```{r}
+# Spezifikation mit Fehlerkorrelation
+mod_mes_vis_o <- '#measurement model
+Abl. =~ 1*Arb. + Whg + Soz. + Straf + Halt + Schul.
+SES =~ 1*Bild. + Beruf + Äq.E. + Schicht
+
+#Error
+Soz. ~~ Soz.
+Whg ~~ Whg
+Arb. ~~ Arb.
+Straf ~~ Straf
+Halt ~~ Halt
+Schul. ~~ Schul.
+Bild. ~~ Bild.
+Schicht ~~ Schicht
+Beruf ~~ Beruf
+Äq.E. ~~ Äq.E.
+
+#Fehlerkor.
+Bild. ~~ Beruf
+
+#Disturbance
+Abl. ~~ Abl.
+SES ~~ SES
+
+#Covariance
+Abl. ~~ SES'
+
+fit_mes_o <- cfa(model = mod_mes_vis_o,
+               estimator = "MLM",
+               data = allbus_imp_vis) 
+
+surveyfit_mes_o <- lavaan.survey(lavaan.fit = fit_mes_o,
+                           survey.design = alb_sd_vis)
+
+semPaths(surveyfit_mes_o,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10, # size latent
+         sizeLat2 = 10, # height latent
+         sizeMan = 6, # size manifest
+         sizeInt = 3.5, 
+         edge.label.cex=0.85, # edding size of parameters
+         curve = 3)
+
+summary(surveyfit_mes_o, standardized = T, fit.measures = T)
+fitmeasures(surveyfit_mes_o)
+
+# Modifikationsindizes
+modi_2 <- modificationindices(surveyfit_mes_o, sort. = TRUE)
+
+# creating table (latex)
+modi_df2 <- as.data.frame(modi_2)
+modi_df2 <- modi_df2 %>% 
+  select(-epc, -sepc.lv, -sepc.nox)
+
+# latex code for the table -> in Latex anpassen
+xtable(modi_df2)
+
+# skalierter Chi-quadrat differenzentest
+anova(surveyfit_mes, surveyfit_mes_o)
+```
+
+
+#Strkturgleichungsmodell mit Pfaden
+```{r}
+# Spezifikation des Modells
+mod_1_vis <- '#measurement model
+Abl. =~ 1*Arb. + Whg + Soz. + Straf + Halt + Schul.
+SES =~ 1*Bild. + Beruf + Äq.E. + Schicht
+
+#Error
+Soz. ~~ Soz.
+Whg ~~ Whg
+Arb. ~~ Arb.
+Straf ~~ Straf
+Halt ~~ Halt
+Schul. ~~ Schul.
+Bild. ~~ Bild.
+Schicht ~~ Schicht
+Beruf ~~ Beruf
+Äq.E. ~~ Äq.E.
+Kont. ~~ Kont.
+
+#Disturbance
+SES ~~ SES
+Abl. ~~ Abl.
+
+#Regression
+Abl. ~ SES
+Abl. ~ Kont.'
+
+fit_mod1 <- cfa(model = mod_1_vis,
+               estimator = "MLM",
+               data = allbus_imp_vis) 
+
+surveyfit_mod1 <- lavaan.survey(lavaan.fit = fit_mod1,
+                           survey.design = alb_sd_vis)
+
+semPaths(surveyfit_mod1,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 8, # size latent
+         sizeLat2 = 8, # height latent
+         sizeMan = 6, # size manifest
+         sizeInt = 3.5, 
+         edge.label.cex=0.7, # edding size of parameters
+         curve = 3,
+         layout = "tree2",
+         rotation = 2)
+
+summary(surveyfit_mod1, standardized = T, fit.measures = T)
+
+# getting unstandardized parameters
+tab_mod1_est <- as.data.frame(parameterestimates(surveyfit_mod1))
+
+tab_mod1_est <- tab_mod1_est %>% 
+  select(-ci.lower, -ci.upper, -z)
+
+#table for est
+xtable(tab_mod1_est)
+
+# standardisierte Parameter
+tab_mod1_std <- as.data.frame(standardizedSolution(surveyfit_mod1))
+tab_mod1_std <- tab_mod1_std %>% 
+  select(-z, -ci.upper, -ci.lower)
+
+#table for std -> combine in latex
+xtable(tab_mod1_std)
+
+# std. Residuals
+resid_mod1 <- get_std_cor(surveyfit_mod1)
+resid_mod1.df <- resid_mod1$residual
+
+# Latex code for table
+xtable(resid_mod1.df)
+
+# Modifikationsindizes
+modi_m1 <- modificationindices(surveyfit_mod1, sort. = TRUE)
+
+# creating table (latex)
+modi_m1.df <- as.data.frame(modi_m1)
+modi_m1.df <- modi_m1.df %>% 
+  select(-epc, -sepc.lv, -sepc.nox)
+
+# latex code for the table -> in Latex anpassen
+xtable(modi_m1.df)
+
+```
+
+# Strukturgleichungsmodell mit Pfaden & Covarianz zwischen SES - Kontakt (literatur noch zitieren!)
+```{r}
+# Spezifikation des Modells
+mod_2_vis <- '#measurement model
+Abl. =~ 1*Arb. + Whg + Soz. + Straf + Halt + Schul.
+SES =~ 1*Bild. + Beruf + Äq.E. + Schicht
+
+#Error
+Soz. ~~ Soz.
+Whg ~~ Whg
+Arb. ~~ Arb.
+Straf ~~ Straf
+Halt ~~ Halt
+Schul. ~~ Schul.
+Bild. ~~ Bild.
+Schicht ~~ Schicht
+Beruf ~~ Beruf
+Äq.E. ~~ Äq.E.
+Kont. ~~ Kont.
+
+#Co-Variance
+SES ~~ Kont.
+
+#Disturbance
+SES ~~ SES
+Abl. ~~ Abl.
+
+#Regression
+Abl. ~ SES
+Abl. ~ Kont.'
+
+fit_mod2 <- cfa(model = mod_2_vis,
+                data = allbus_imp_vis,
+                estimator = "MLM")
+
+surveyfit_mod2 <- lavaan.survey(lavaan.fit = fit_mod2,
+                           survey.design = alb_sd_vis)
+
+semPaths(surveyfit_mod2,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 8, # size latent
+         sizeLat2 = 8, # height latent
+         sizeMan = 5, # size manifest
+         sizeInt = 2.5, 
+         edge.label.cex=0.7, # edding size of parameters
+         curve = 3,
+         layout = "tree2",
+         rotation = 2)
+
+summary(surveyfit_mod2, standardized = T, fit.measures = T)
+
+# Signifikanter Differenzentest *yay*
+anova(surveyfit_mod2, surveyfit_mod1)
+
+sempaths
+
+```
+
 
 
 ```{r}
