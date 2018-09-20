@@ -127,15 +127,19 @@ allbus_oD
 options(scipen =999)
 # install.packages("ISLR")
 library("ISLR") # package for logistic regression
-glm.fit1 <- glm(siops08_mis ~ work + age + di08c, 
+glm.fit1 <- glm(siops08_mis ~ work + age + sex, 
                 data = allbus_oD, 
                 family = binomial)
 
-summary(glm.fit1)
+glm.fit2 <- glm(siops08_mis ~ work + age + sex + di08c, 
+                data = allbus_oD, 
+                family = binomial)
 
-install.packages("stargazer")
+summary(glm.fit2)
+
+# install.packages("stargazer")
 library(stargazer)
-stargazer(glm.fit1)
+stargazer(glm.fit1, glm.fit2)
 
 # high significant correlation between work and missings of siops08
 # should filtering data set by work
@@ -196,26 +200,27 @@ LittleMCAR(allbus_c)
 # pvalue: 0.000
 # H0-Hypothese wird folglich verworfen -> KEIN MCAR!
 
+# logistische Regression - mc04 missing (Kontakt)
+allbus_c <- transform(allbus_c, mc04_mis = ifelse(is.na(mc04), 0, 1))
+glm_mis1 <- glm(mc04_mis ~ sex + age, 
+                data = allbus_c, 
+                family = binomial)
+summary(glm_mis1)
 
-# Logistic Regression for di08c-missings
-allbus_c <- transform(allbus_c, di08c_mis = ifelse(is.na(di08c), 0, 1))
-glm_mis2 <- glm(di08c_mis ~ sex + age + isced11, 
+# 
+glm_mis2 <- glm(mc04_mis ~ sex + age + isced11 + id02, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis2)
-stargazer(glm.fit1, glm_mis2, glm_mis3, title = "Tabelle x: logisitische Regression - Fehlende Werte")
 
-# Schichteinstufung (negativ) & Alter (positiv) haben hier einen signifikanten Einfluss
 
-# Logistic Regression for mc09-missings
-allbus_c <- transform(allbus_c, mc09_mis = ifelse(is.na(mc09), 0, 1))
-glm_mis3 <- glm(mc09_mis ~ sex + age + work + id02 + isced11 + mc04, 
+# Logistic Regression for di08c-missings
+allbus_c <- transform(allbus_c, di08c_mis = ifelse(is.na(di08c), 0, 1))
+glm_mis3 <- glm(di08c_mis ~ sex + age + isced11, 
                 data = allbus_c, 
                 family = binomial)
 summary(glm_mis3)
-
-# Kontakt Freundeskreis (negativ) hat hoch sig. negativen Zusammenhang! 
-# Grund: Man kann auf einen fehlenden Kontakt schließen, wodurch eine Beantwortung der Erfahrung ausbleibt
+stargazer(glm_mis1, glm_mis2, glm_mis3, title = "Tabelle x: logisitische Regression - Fehlende Werte")
 
 # Entscheidung für Missing at Random (MAR)
 

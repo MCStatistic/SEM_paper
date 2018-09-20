@@ -16,14 +16,16 @@ allbus_imp$siops08
 allbus <- allbus %>%
   select(mc01, mc02, mc03, mc04, wghtpew)
 
+colnames(allbus) <- c("Familie", "Arbeit", "Nachbar.", "Freund.", "wghtpew")
+
 mod_loadings <- '#measurement
-Kontakt =~ 1*mc04 + mc03 + mc02 + mc01
+Kontakt =~ 1*Freund. + Nachbar. + Arbeit + Familie
 
 #Error
-mc01 ~~ mc01
-mc02 ~~ mc02
-mc03 ~~ mc03
-mc04 ~~ mc04'
+Familie ~~ Familie
+Arbeit ~~ Arbeit
+Nachbar. ~~ Nachbar.
+Freund. ~~ Freund.'
 
 fit_loads <- cfa(model = mod_loadings,
                  data = allbus,
@@ -41,12 +43,40 @@ semPaths(fit_loads_weight,
          whatLabels = "std",
          sizeLat = 10, # size latent
          sizeLat2 = 10, # height latent
-         sizeMan = 6, # size manifest
+         sizeMan = 8, # size manifest
          sizeInt = 3.5, 
          edge.label.cex=0.85, # edding size of parameters
          curve = 3)
 
 summary(fit_loads_weight, standardized = T, fit.measures = T)
+
+# Ohne Freund
+mod_loadings2 <- '#measurement
+Kontakt =~  1*Nachbar. + Arbeit + Familie
+
+#Error
+Familie ~~ Familie
+Arbeit ~~ Arbeit
+Nachbar. ~~ Nachbar.'
+
+fit_loads2 <- cfa(model=mod_loadings2,
+                  data=allbus,
+                  estimator="MLM")
+
+fit_loads2_w <- lavaan.survey(lavaan.fit = fit_loads2,
+                              survey.design = allbus_design)
+
+semPaths(fit_loads2_w,
+         nCharNodes = 0,
+         whatLabels = "std",
+         sizeLat = 10, # size latent
+         sizeLat2 = 10, # height latent
+         sizeMan = 8, # size manifest
+         sizeInt = 3.5, 
+         edge.label.cex=0.85, # edding size of parameters
+         curve = 3)
+
+# Ebenso schlechte Loadings :(
 
 ```
 
@@ -355,10 +385,32 @@ semPaths(surveyfit_mod2,
 
 summary(surveyfit_mod2, standardized = T, fit.measures = T)
 
-# Signifikanter Differenzentest *yay*
-anova(surveyfit_mod2, surveyfit_mod1)
+# unstandardisierte Parameter
+tab_mod2_est <- as.data.frame(parameterestimates(surveyfit_mod2))
 
-sempaths
+tab_mod2_est <- tab_mod2_est %>% 
+  select(-ci.lower, -ci.upper, -z)
+
+#table for est
+xtable(tab_mod2_est)
+
+# standardisierte Parameter
+tab_mod2_std <- as.data.frame(standardizedSolution(surveyfit_mod2))
+tab_mod2_std <- tab_mod2_std %>% 
+  select(-z, -ci.upper, -ci.lower)
+
+#table for std -> combine in latex
+xtable(tab_mod2_std)
+
+# std. Residuals
+resid_mod2 <- get_std_cor(surveyfit_mod2)
+resid_mod2.df <- resid_mod2$residual
+
+# Latex code for table
+xtable(resid_mod2.df)
+
+# Signifikanter Differenzentest *yay*
+anova(surveyfit_mod1, surveyfit_mod2)
 
 ```
 
