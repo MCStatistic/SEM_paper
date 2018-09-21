@@ -329,13 +329,13 @@ surveyfit_mod1 <- lavaan.survey(lavaan.fit = fit_mod1,
 semPaths(surveyfit_mod1,
          nCharNodes = 0,
          whatLabels = "std",
-         sizeLat = 8, # size latent
-         sizeLat2 = 8, # height latent
-         sizeMan = 6, # size manifest
+         sizeLat = 8, 
+         sizeLat2 = 8, 
+         sizeMan = 6, 
          sizeInt = 3.5, 
-         edge.label.cex=0.7, # edding size of parameters
+         edge.label.cex=0.7,
          curve = 3,
-         layout = "tree2",
+         layout = "tree2", # super layout in Kombination mit ritation = 2!
          rotation = 2)
 
 summary(surveyfit_mod1, standardized = T, fit.measures = T)
@@ -357,14 +357,14 @@ tab_mod1_std <- tab_mod1_std %>%
 #table for std -> combine in latex
 xtable(tab_mod1_std)
 
-# std. Residuals
+# std. Residuals -> ebenso in den Anhang
 resid_mod1 <- get_std_cor(surveyfit_mod1)
 resid_mod1.df <- resid_mod1$residual
 
 # Latex code for table
 xtable(resid_mod1.df)
 
-# Modifikationsindizes
+# Modifikationsindizes; wieder die ersten 10 heranziehen
 modi_m1 <- modificationindices(surveyfit_mod1, sort. = TRUE)
 
 # creating table (latex)
@@ -432,6 +432,7 @@ summary(surveyfit_mod2, standardized = T, fit.measures = T)
 # unstandardisierte Parameter
 tab_mod2_est <- as.data.frame(parameterestimates(surveyfit_mod2))
 
+# Entfernung nicht relevanter columns
 tab_mod2_est <- tab_mod2_est %>% 
   select(-ci.lower, -ci.upper, -z)
 

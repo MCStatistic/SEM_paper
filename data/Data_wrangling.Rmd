@@ -71,14 +71,7 @@ allbus <- read_spss("allbus2016.sav") %>%
          mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
          pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02,
          isced11, siops08, di08c, xr27, wghtpew)
-
-# View(allbus_oD)
-
-# ncol(allbus)
-# nrow(allbus)
-
 ```
-
 
 ##soziodemografische Werte
 age
@@ -86,10 +79,9 @@ sex
 isced11: Bildung
 siops08: Berufsprestige
 di08c:   Äquivalenzeinkommen, kat.
-xr27:    Schichteinstufung - Haushalt (VOR Beginn des Interview)
 id02:    Schichteinstufung - Haushalt 
 
-##Einstellung zu Ausländern
+##Einstellung zu Ausländern - Variablen mit "negativen Aussagen"
 mp02 - Soziales Netz
 mp04 - Wohnungen
 mp06 - Arbeitsplätze
@@ -99,13 +91,8 @@ mp11 - Schulniveau
 
 ##Kontakt/Kontakterfahrung
 mc04 (Kontakt im Freundeskreis), 
-mc09 (Wie oft gute Erfahrungen mit Kontakt gemacht?)
-mc01, mc02, mc03 -> entfällt, da Faktorladungen zu schlecht
-mc10 -> entfällt, da bereits mc09 verwendet wird...
-
-##Stolz -> entfällt, da zu viel
-pn01, pn02, pn03, pn04, pn05, pn06, pn07
-
+mc09 (Wie oft gute Erfahrungen mit Kontakt gemacht?) -> KEIN Multigruppenvergleich, da zu viel...
+mc01, mc02, mc03 -> entfällt, da Faktorladungen zu schlecht (entsprechende Modellierung in den Anhang)
 
 #Missing Data - percentage & first look
 ```{r, results='asis'}
