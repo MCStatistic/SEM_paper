@@ -5,14 +5,63 @@ date: "26 8 2018"
 output: pdf_document
 ---
 
+#Packages
+```{r}
+# install.packages("haven")
+# install.packages("tidyverse")
+# install.packages("magrittr")
+# install.packages("mvnmle")
+# install.packages("mice")
+# install.packages("tidyr")
+# install.packages("dplyr")
+# install.packages("semPlot")
+# install.packages("lavaan")
+# install.packages("corrplot")
+# install.packages("naniar") # Package for missing analysis
+# install.packages("ggplot2")
+# install.packages("ISLR")
+# install.packages("stargazer")
+# install.packages("BaylorEdPsych") 
+# install.packages("xtable")
+# install.packages("MVN")
+# install.packages("pastecs")
+# install.packages("lavaan.survey")
+
+library(haven)
+library(tidyverse)
+library(magrittr)
+library(mvnmle)
+library(mice)
+library(tidyr)
+library(dplyr)
+library(semPlot)
+library(lavaan)
+library(corrplot)
+library(naniar) # Package for missing analysis
+library(ggplot2)
+library(ISLR)
+library(stargazer)
+library(BaylorEdPsych) 
+library(xtable)
+library(MVN)
+library(pastecs)
+library(lavaan.survey)
+```
+
+
 #Loading Data
 ```{r}
 load("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
-allbus_imp$siops08
 ```
 
-#Bad Loadings
+#Bad Loadings - Messmodell für Kontakt
 ```{r}
+allbus <- read_spss("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/data/allbus2016.sav") %>% 
+  select(age, sex, work, ma09, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
+         mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
+         pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02,
+         isced11, siops08, di08c, xr27, wghtpew)
+
 allbus <- allbus %>%
   select(mc01, mc02, mc03, mc04, wghtpew)
 
@@ -31,6 +80,7 @@ fit_loads <- cfa(model = mod_loadings,
                  data = allbus,
                  estimator = "MLM")
 
+library("lavaan.survey")
 allbus_design <- svydesign(id = ~1,
                            weights = ~wghtpew,
                            data =allbus)
@@ -125,7 +175,6 @@ fit_mes <- cfa(model = mod_mes_vis,
                estimator = "MLM",
                data = allbus_imp_vis) 
 
-library("lavaan.survey")
 alb_sd_vis <- survey::svydesign(id= ~1,
                   weights= ~gewicht,
                   data= allbus_imp_vis)
@@ -144,14 +193,11 @@ semPaths(surveyfit_mes,
          edge.label.cex=0.85, # edding size of parameters
          curve = 3)
 
-# Fitmaße und mehr
+# Fitmaße und mehr // fitmeasures alle eig. schon in summary enthalten, aber zwecks Überprüfung
 summary(surveyfit_mes, standardized = T, fit.measures = T)
 fitmeasures(surveyfit_mes)
 
-# Residuen noch überprüfen (in Anhang reicht)
-
-
-# Modifikationsindizes für zwecks möglicher Optimierungen
+# Modifikationsindizes für zwecks möglicher Optimierungen -> die ersten 10 nehmen, sonst zu lang
 modi_1 <- modificationindices(surveyfit_mes, sort. = TRUE)
 
 # creating table (latex)
@@ -162,7 +208,7 @@ modi_df1 <- modi_df1 %>%
 # latex code for the table -> in Latex anpassen
 xtable(modi_df1)
 
-# Obtaining std. Residuqls
+# Obtaining std. Residuals -> in den Anhang und in der Arbeit Bezug drauf nehmen
 get_std_cor <- function(fit) {
   N_cov <- list(
     observed = inspect(fit, 'sampstat')$cov ,
@@ -178,8 +224,6 @@ resid_mes <- get_std_cor(surveyfit_mes)
 resid_mes.df <- resid_mes$residual
 
 xtable(resid_mes.df)
-
-
 ```
 
 #freie Schätzung MI - Messmodell 2 (Anhang)
@@ -247,7 +291,7 @@ anova(surveyfit_mes, surveyfit_mes_o)
 ```
 
 
-#Strkturgleichungsmodell mit Pfaden
+#Strkturgleichungsmodell mit Pfaden - Modell 2 in HA
 ```{r}
 # Spezifikation des Modells
 mod_1_vis <- '#measurement model
@@ -333,7 +377,7 @@ xtable(modi_m1.df)
 
 ```
 
-# Strukturgleichungsmodell mit Pfaden & Covarianz zwischen SES - Kontakt (literatur noch zitieren!)
+# Strukturgleichungsmodell mit Pfaden & Kovarianz zwischen SES - Kontakt - Modell 3 in HA
 ```{r}
 # Spezifikation des Modells
 mod_2_vis <- '#measurement model
@@ -412,243 +456,5 @@ xtable(resid_mod2.df)
 # Signifikanter Differenzentest *yay*
 anova(surveyfit_mod1, surveyfit_mod2)
 
-```
-
-
-
-```{r}
-mod_mes <- '#measurement model
-Abl. =~ 1*mp06 + mp04 + mp02 + mp07 + mp09 + mp11
-SES =~ 1*isced11 + siops08 + di08c + id02
-
-#Error
-mp02 ~~ mp02
-mp04 ~~ mp04
-mp06 ~~ mp06
-mp07 ~~ mp07
-mp09 ~~ mp09
-mp11 ~~ mp11
-isced11 ~~ isced11
-id02 ~~ id02
-siops08 ~~ siops08
-di08c ~~ di08c
-
-#Disturbance
-Abl. ~~ Abl.
-SES ~~ SES
-
-#Covariance
-Abl. ~~ SES'
-
-
-
-fit_mes <- cfa(model = mod_mes,
-               estimator = "MLM",
-               data = allbus_imp) # KEEP GOING!
-
-library("lavaan.survey")
-alb_sd <- survey::svydesign(id= ~1,
-                  weights= ~wghtpew,
-                  data= allbus_imp)
-
-surveyfit <- lavaan.survey(lavaan.fit = fit_mes,
-                           survey.design = alb_sd)
-
-semPaths(fit_mes,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3)
-
-semPaths(surveyfit,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3,
-         layout = "spring")
-title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
-
-summary(fit_mes, standardized = T, fit.measures = T)
-
-modificationindices(fit_mes, sort. = TRUE)
-```
-
-
-#Model 1 - SES - Abl.
-```{r, results='asis'}
-
-mod1 <- '#measurement model
-Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
-SES =~ 1*isced11 + siops08 + di08c + id02
-
-#Error
-mp02 ~~ mp02
-mp04 ~~ mp04
-mp06 ~~ mp06
-mp07 ~~ mp07
-mp09 ~~ mp09
-mp11 ~~ mp11
-isced11 ~~ isced11
-id02 ~~ id02
-siops08 ~~ siops08
-di08c ~~ di08c
-
-#Disturbances
-Abl. ~~ Abl.
-SES ~~ SES
-
-#Regression
-Abl. ~ SES'
-
-fit1 <- cfa(model = mod1, 
-            data = allbus_oD,
-            estimator = "MLM")
-
-# install.packages("lavaan.survey")
-library("lavaan.survey")
-alb_sd <- survey::svydesign(id= ~1,
-                  weights= ~wghtpew,
-                  data= allbus_imp)
-
-surveyfit <- lavaan.survey(lavaan.fit = fit1,
-                           survey.design = alb_sd)
-
-summary(surveyfit, standardized = T, fit.measures = T)
-
-summary(fit1, standardized = T, fit.measures = T)
-
-semPaths(fit1,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3,
-         layout = "spring")
-title("Modell 1: Ausländerablehnung auf sozioökonomischen Status", adj = 0)
-
-fitmeasures(fit1, "all")
-summary(fit1, standardized = T, fit.measures = T)
-
-pars.factors <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='=~', c(1:5)]
-pars.regressions <- standardizedSolution(fit1)[ standardizedSolution(fit1)[,'op']=='~', c(1:5)]
-rbind(pars.factors, pars.regressions)
-
-
-library(xtable)
-xtable(rbind(pars.factors, pars.regressions))
-
-# xtable(modindices(fit1))
-```
-
-
-#Model 2: Abl. auf SES und Kontakt
-```{r}
-mod2 <- '#measurement model
-Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
-SES =~ 1*isced11 + siops08 + di08c + id02
-
-
-#Error
-mp02 ~~ mp02
-mp04 ~~ mp04
-mp06 ~~ mp06
-mp07 ~~ mp07
-mp09 ~~ mp09
-mp11 ~~ mp11
-mc04 ~~ mc04
-isced11 ~~ isced11
-di08c ~~ di08c
-id02 ~~ id02
-
-#Covariance
-SES ~~ mc04
-
-#Disturbances
-Abl. ~~ Abl.
-SES ~~ SES
-
-#Regression
-Abl. ~ SES
-Abl. ~ mc04'
-
-fit2 <- cfa(model = mod2, 
-            data = allbus_imp,
-            estimator = "MLM")
-
-semPaths(fit2,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3,
-         layout = "tree")
-title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
-
-summary(fit2, standardized = T, fit.measures = T)
-
-```
-
-#TEST
-```{r}
-test <- '#measurement model
-Abl. =~ 1*mp02 + mp04 + mp06 + mp07 + mp09 + mp11
-SES =~ 1*isced11 + siops08 + di08c + id02
-K =~ 1*mc01 + mc02 + mc03 + mc04
-
-#Error
-mp02 ~~ mp02
-mp04 ~~ mp04
-mp06 ~~ mp06
-mp07 ~~ mp07
-mp09 ~~ mp09
-mp11 ~~ mp11
-mc04 ~~ mc04
-isced11 ~~ isced11
-di08c ~~ di08c
-id02 ~~ id02
-
-#Covariance
-SES ~~ mc04
-
-#Disturbances
-Abl. ~~ Abl.
-SES ~~ SES
-
-#Regression
-Abl. ~ SES
-Abl. ~ mc04'
-
-fit_t <- cfa(model = test, 
-            data = allbus,
-            estimator = "MLM")
-
-semPaths(fit_t,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3,
-         layout = "tree")
-title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
-
-summary(fit2, standardized = T, fit.measures = T)
-
-test_2 <- '#measurement model
-K =~ 1*mc01 + mc02 + mc03'
-
-fit_t2 <- cfa(model = test_2, 
-            data = allbus,
-            estimator = "MLM")
-
-semPaths(fit_t2,
-         nCharNodes = 0,
-         whatLabels = "std",
-         sizeLat = 10,
-         sizeLat2 = 10,
-         curve = 3,
-         layout = "tree")
-title("Modell 2: Ausländerablehnung auf sozioökonomischen Status und Kontakt", adj = 0)
 ```
 

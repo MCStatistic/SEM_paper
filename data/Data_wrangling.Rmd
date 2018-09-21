@@ -7,19 +7,56 @@ output: pdf_document
 
 # packages
 ```{r}
-install.packages("pacman")
-library("pacman")
-p_load(tidyverse, # noting to explain, makes it just tidy
-       haven, # read-function and more
-       magrittr, 
-       corrplot, 
-       mvnmle, 
-       mice, 
-       tidyr, 
-       dplyr, # data wrangling & pipe-operator
-       semPlot,
-       lavaan) # for plotting models
+# install.packages("pacman")
+# library("pacman")
+# p_load(tidyverse, # noting to explain, makes it just tidy
+#        haven, # read-function and more
+#        magrittr, 
+#        corrplot, 
+#        mvnmle, 
+#        mice, 
+#        tidyr, 
+#        dplyr, # data wrangling & pipe-operator
+#        semPlot,
+#        lavaan) # for plotting models
 
+# install.packages("haven")
+# install.packages("tidyverse")
+# install.packages("magrittr")
+# install.packages("mvnmle")
+# install.packages("mice")
+# install.packages("tidyr")
+# install.packages("dplyr")
+# install.packages("semPlot")
+# install.packages("lavaan")
+# install.packages("corrplot")
+# install.packages("naniar") # Package for missing analysis
+# install.packages("ggplot2")
+# install.packages("ISLR")
+# install.packages("stargazer")
+# install.packages("BaylorEdPsych") 
+# install.packages("xtable")
+# install.packages("MVN")
+# install.packages("pastecs")
+
+library(haven)
+library(tidyverse)
+library(magrittr)
+library(mvnmle)
+library(mice)
+library(tidyr)
+library(dplyr)
+library(semPlot)
+library(lavaan)
+library(corrplot)
+library(naniar) # Package for missing analysis
+library(ggplot2)
+library(ISLR)
+library(stargazer)
+library(BaylorEdPsych) 
+library(xtable)
+library(MVN)
+library(pastecs)
 ## Packages will be
 ```
 
@@ -183,9 +220,6 @@ ggplot(data=missing_c, aes(x= reorder(variable,pct_miss),
   theme(axis.text.y = element_text(angle = 40, vjust = 1, hjust=1)) +
   ylab("Anteil in Prozent") +
   ggtitle(expression(paste(bold("Abbildung 2: "), "Prozente der fehlenden Werte nach Filterung")))
-
-  
-missing_c_col <- setnames(data, old=c("old_name","another_old_name"), new=c("new_name", "another_new_name"))
 ```
 
 
@@ -229,13 +263,14 @@ stargazer(glm_mis1, glm_mis2, glm_mis3, title = "Tabelle x: logisitische Regress
 
 #Missing Data - multiple imputation
 ```{r}
-install.packages("mice")
+# install.packages("mice")
 library(mice)
 
 # Deleting variables for logistic regressions
 allbus_c2 <- allbus_c %>% 
   select(-siops08_mis,
-         -di08c_mis)
+         -di08c_mis, 
+         -mc04_mis)
 
 allb_imp <- mice(allbus_c2, 
                    m=5,           # Number of multiple imputations
@@ -250,6 +285,8 @@ colnames(allb_vis)<- c("Alter", "Geschlecht", "Arbeitssituation", "A_Soziales_Ne
                         "A_Schulniveau", "Kontakt", "Bildung", "Berufsprestige", "Äquivalenzeink.",
                         "Schicht", "Gewichtung")
 
+
+
 allb_imp_vis <- mice(allb_vis,
                      m = 5,
                      maxit = 20,
@@ -261,14 +298,6 @@ stripplot(allb_imp_vis)
 densityplot(allb_imp)
 stripplot(allb_imp)
 
-imp <- allb_imp
-colnames(imp$imp)[which(names(imp$imp) == "mp02")] <- "Klappts"
-
-densityplot(allb_imp, ylab = "Density")
-stripplot(allb_imp)
-
-densityplot(imp)
-
 allbus_imp <- complete(allb_imp)
 allbus_imp
 
@@ -279,7 +308,7 @@ allbus_imp
 m_test <- allbus_imp %>% 
   select(-wghtpew, -sex, -age, -work)
 
-install.packages("pastecs")
+# install.packages("pastecs")
 library(pastecs)
 
 stat.desc(m_test)
@@ -287,8 +316,8 @@ stat.desc(m_test)
 summary(m_test)
 
 
-install.packages("MVN") # Package for Mardia Test
-library(mvn)
+# install.packages("MVN") # Package for Mardia Test
+library(MVN)
 
 mvn(m_test, 
     mvnTest = "hz",
@@ -305,9 +334,7 @@ results <- mvn(m_test,
     covariance = T,
     multivariatePlot = "qq")
 
-mardia(m_test)
-
-# Mardia Skewness ist extrem hoch, leider derzeit noch keine wirkliche Literatur diesbezüglich gefunden
+results # Mardia Skewness ist extrem hoch, leider derzeit noch keine wirkliche Literatur diesbezüglich gefunden
 
 desc <- as.data.frame(results$Descriptives)
 desc_sw <- as.data.frame(results$univariateNormality)
@@ -328,7 +355,7 @@ library(xtable)
 xtable(desc_x)
 
 desc_comp <- desc_complete %>% 
-  select(-variable, - Variable, -Statistic)
+  select(- Variable, -Statistic)
 
 # ordering colnames
 col_order <- c("Mean", "Median", "Std.Dev", "Min", "Max", "Skew", "Kurtosis", "p value")
@@ -353,7 +380,9 @@ res <- cor(allb_vis_cor)
 res <- round(res, 2)
 
 as.data.frame(res)
+
 # latex code for table
+library(xtable)
 xtable(as.data.frame(res))
 
 allb_vis_p <- allb_vis_cor
@@ -366,23 +395,13 @@ res_p <- round(res_p, 2)
 # Plot
 library(corrplot)
 corrplot(res_p, method = "square", # Darstellungsmethode
-         type = "upper", # 
+         type = "upper",
          tl.col="black", # color of labels
+         diag = F,
          tl.srt = 15, # winkel der labels
          tl.cex = 0.6, # size of labels
-         addCoef.col="black", # color for coef
-         diag=FALSE, # diagonale wird so nicht dargestellt
+         addCoef.col="black",  # color
          insig = "blank")
-```
-
-# Faktorenanalyse
-```{r}
-allb_efa <- allbus_imp %>% 
-  select(-age, -sex, -wghtpew, -work, -mc04)
-
-install.packages("GPArotation")
-library(GPArotation)
-fa_1 <- fa(allb_efa, 2, fm="pa", rotate ="oblimin")
 ```
 
 
