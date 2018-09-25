@@ -1,31 +1,31 @@
 ---
 title: "Analysis"
 author: "Marlon Schumacher"
-date: "26 8 2018"
+date: "13 8 2018"
 output: pdf_document
 ---
 
 #Packages
 ```{r}
-# install.packages("haven")
-# install.packages("tidyverse")
-# install.packages("magrittr")
-# install.packages("mvnmle")
-# install.packages("mice")
-# install.packages("tidyr")
-# install.packages("dplyr")
-# install.packages("semPlot")
-# install.packages("lavaan")
-# install.packages("corrplot")
-# install.packages("naniar") # Package for missing analysis
-# install.packages("ggplot2")
-# install.packages("ISLR")
-# install.packages("stargazer")
-# install.packages("BaylorEdPsych") 
-# install.packages("xtable")
-# install.packages("MVN")
-# install.packages("pastecs")
-# install.packages("lavaan.survey")
+install.packages("haven")
+install.packages("tidyverse")
+install.packages("magrittr")
+install.packages("mvnmle")
+install.packages("mice")
+install.packages("tidyr")
+install.packages("dplyr")
+install.packages("semPlot")
+install.packages("lavaan")
+install.packages("corrplot")
+install.packages("naniar")
+install.packages("ggplot2")
+install.packages("ISLR")
+install.packages("stargazer")
+install.packages("BaylorEdPsych") 
+install.packages("xtable")
+install.packages("MVN")
+install.packages("pastecs")
+install.packages("lavaan.survey")
 
 library(haven)
 library(tidyverse)
@@ -51,21 +51,21 @@ library(lavaan.survey)
 
 #Loading Data
 ```{r}
-load("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
+load("allbus_imp.RData")
 ```
 
 #Bad Loadings - Messmodell für Kontakt
 ```{r}
-allbus <- read_spss("/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/data/allbus2016.sav") %>% 
-  select(age, sex, work, ma09, mp02, mp03, mp04, mp05, mp06, mp07, mp08, mp09, mp10, mp11, mp12, 
-         mc01, mc02, mc03, mc04, mc09, dn07, ma02, ma03, ma04, 
-         pn01, pn02, pn03, pn04, pn05, pn06, pn07, ma09, ingle, id02,
-         isced11, siops08, di08c, xr27, wghtpew)
+# Inspektion der Loadings anhand des gefilterten Datensatzes -> nur für den Anhang
+allbus <- read_spss("allbus2016.sav") %>% 
+  select(mc01, mc02, mc03, mc04, wghtpew, work)
 
-allbus <- allbus %>%
-  select(mc01, mc02, mc03, mc04, wghtpew)
+colnames(allbus) <- c("Familie", "Arbeit", "Nachbar.", "Freund.", "wghtpew", "work")
 
-colnames(allbus) <- c("Familie", "Arbeit", "Nachbar.", "Freund.", "wghtpew")
+# Filterung derjenigen, die kein Berufsprestige haben
+allbus <- allbus[!(allbus$work == 4),]
+allbus <- allbus[!(allbus$work == 3),]
+allbus <- allbus[!(is.na(allbus$wghtpew)),]
 
 mod_loadings <- '#measurement
 Kontakt =~ 1*Freund. + Nachbar. + Arbeit + Familie
@@ -125,7 +125,6 @@ semPaths(fit_loads2_w,
          sizeInt = 3.5, 
          edge.label.cex=0.85, # edding size of parameters
          curve = 3)
-
 # Ebenso schlechte Loadings :(
 
 ```
@@ -226,7 +225,7 @@ resid_mes.df <- resid_mes$residual
 xtable(resid_mes.df)
 ```
 
-#freie Schätzung MI - Messmodell 2 (Anhang)
+#freie Schätzung MI - Messmodell 2 mit Fehlerkorrelation (kommt in den Anhang als Ergänzung)
 ```{r}
 # Spezifikation mit Fehlerkorrelation
 mod_mes_vis_o <- '#measurement model
@@ -377,7 +376,7 @@ xtable(modi_m1.df)
 
 ```
 
-# Strukturgleichungsmodell mit Pfaden & Kovarianz zwischen SES - Kontakt - Modell 3 in HA
+# Strukturgleichungsmodell mit Pfaden & Kovarianz zwischen SES & Kontakt - Modell 3 in HA
 ```{r}
 # Spezifikation des Modells
 mod_2_vis <- '#measurement model

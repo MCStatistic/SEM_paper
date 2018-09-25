@@ -1,7 +1,7 @@
 ---
 title: "Untitled"
 author: "Marlon Schumacher"
-date: "18 8 2018"
+date: "09 8 2018"
 output: pdf_document
 ---
 
@@ -20,24 +20,24 @@ output: pdf_document
 #        semPlot,
 #        lavaan) # for plotting models
 
-# install.packages("haven")
-# install.packages("tidyverse")
-# install.packages("magrittr")
-# install.packages("mvnmle")
-# install.packages("mice")
-# install.packages("tidyr")
-# install.packages("dplyr")
-# install.packages("semPlot")
-# install.packages("lavaan")
-# install.packages("corrplot")
-# install.packages("naniar") # Package for missing analysis
-# install.packages("ggplot2")
-# install.packages("ISLR")
-# install.packages("stargazer")
-# install.packages("BaylorEdPsych") 
-# install.packages("xtable")
-# install.packages("MVN")
-# install.packages("pastecs")
+install.packages("haven")
+install.packages("tidyverse")
+install.packages("magrittr")
+install.packages("mvnmle")
+install.packages("mice")
+install.packages("tidyr")
+install.packages("dplyr")
+install.packages("semPlot")
+install.packages("lavaan")
+install.packages("corrplot")
+install.packages("naniar")
+install.packages("ggplot2")
+install.packages("ISLR")
+install.packages("stargazer")
+install.packages("BaylorEdPsych") 
+install.packages("xtable")
+install.packages("MVN")
+install.packages("pastecs")
 
 library(haven)
 library(tidyverse)
@@ -57,7 +57,6 @@ library(BaylorEdPsych)
 library(xtable)
 library(MVN)
 library(pastecs)
-## Packages will be
 ```
 
 #Input: ALLBUS 2016
@@ -171,7 +170,7 @@ stargazer(glm.fit1, glm.fit2)
 # creating new df by filtering with work == 4 (not working) & 3
 allbus_c <- allbus_oD[!(allbus_oD$work == 4),]
 allbus_c <- allbus_c[!(allbus_c$work == 3),]
-# deleting the row with one new NA in it...look up where it come from...confusing.
+# deleting the row with one new NA in it.
 allbus_c <- allbus_c[!(is.na(allbus_c$sex)),]
 
 # creating percantage of missing data
@@ -280,11 +279,14 @@ allb_imp_vis <- mice(allb_vis,
                      method = "pmm",
                      seed=500)
 
+# Plotting both
 densityplot(allb_imp_vis)
 stripplot(allb_imp_vis)
 densityplot(allb_imp)
 stripplot(allb_imp)
+# same
 
+# combining the original dataset with the first imputated dataset
 allbus_imp <- complete(allb_imp)
 allbus_imp
 
@@ -296,11 +298,9 @@ m_test <- allbus_imp %>%
   select(-wghtpew, -sex, -age, -work)
 
 # install.packages("pastecs")
-library(pastecs)
-
-stat.desc(m_test)
-
-summary(m_test)
+# library(pastecs)
+# stat.desc(m_test)
+# summary(m_test)
 
 
 # install.packages("MVN") # Package for Mardia Test
@@ -351,10 +351,9 @@ desc_complete_f <- desc_comp[, col_order]
 desc_co_f<- desc_complete_f %>% 
   select(-Min, -Max)
 
+# latex code for table
 xtable(desc_complete_f)
 xtable(desc_complete)
-
-stargazer(desc_comp)
 ```
 
 # Correlation & More
@@ -379,7 +378,7 @@ colnames(allb_vis_p) <- c("A_Soz.",  "A_Wohnungen", "A_Arbeitsplätze", "A_Straf
 res_p <- cor(allb_vis_p)
 res_p <- round(res_p, 2)
 
-# Plot
+# Correlationplot
 library(corrplot)
 corrplot(res_p, method = "square", # Darstellungsmethode
          type = "upper",
@@ -395,7 +394,7 @@ corrplot(res_p, method = "square", # Darstellungsmethode
 #Saving Data RData
 ```{r}
 save(allbus_imp, 
-     file = "/Users/marlonschumacher/Documents/2_Master/Git_Projekte/SEM_paper/allbus_imp.RData")
+     file = "allbus_imp.RData")
 ```
 
 
